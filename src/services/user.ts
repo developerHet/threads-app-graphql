@@ -1,8 +1,8 @@
 import { prismaClient } from "../lib/db";
 import { createHmac, randomBytes } from "node:crypto";
-import JWT from 'jsonwebtoken';
+import JWT from "jsonwebtoken";
 
-const JWT_SECRET = "testsecret"
+const JWT_SECRET = "testsecret";
 
 export interface CreateUserPayload {
   firstName: string;
@@ -43,6 +43,10 @@ class UserService {
     return await prismaClient.user.findUnique({ where: { email } });
   }
 
+  public static async getUserById(id: string) {
+    return await prismaClient.user.findUnique({ where: { id } });
+  }
+
   public static async getUserToken(payload: GetUserTokenPayload) {
     const { email, password } = payload;
     const user = await UserService.getUserByEmail(email);
@@ -50,13 +54,18 @@ class UserService {
     if (!user) throw new Error("user not found");
 
     const userSalt = user.salt;
-    const userHasPassowrd = UserService.generateHash(userSalt,password);
+    const userHasPassowrd = UserService.generateHash(userSalt, password);
 
-    if(userHasPassowrd!==user.password) throw new Error('Incorrect Passowrd');
+    if (userHasPassowrd !== user.password)
+      throw new Error("Incorrect Passowrd");
 
     // Gen Token
-    const token  = JWT.sign({id:user.id,email:user.email},JWT_SECRET);
+    const token = JWT.sign({ id: user.id, email: user.email }, JWT_SECRET);
     return token;
+  }
+
+  public static decodeJWTToken(token: string) {
+    return JWT.verify(token, JWT_SECRET);
   }
 }
 
